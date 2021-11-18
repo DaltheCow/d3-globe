@@ -33,13 +33,6 @@
     //
     // Configuration
     //
-    // import { geoEqualEarth, geoPath } from "https://cdn.skypack.dev/d3-geo@3";
-    // const {
-    //   geoEqualEarth,
-    //   geoPath,
-    // } = require("https://cdn.skypack.dev/d3-geo@3");
-    // const projection = geoEqualEarth();
-    // const path = geoPath(projection);
 
     // ms to wait after dragging before auto-rotating
     var rotationDelay = 3000;
@@ -54,8 +47,6 @@
     var colorLand = "#111";
     var colorGraticule = "#ccc";
     var colorCountry = "#a00";
-    var i = 0;
-    var title = d3.select("h1");
 
     //
     // Handler
@@ -91,6 +82,7 @@
     var width, height;
     var land, countries;
     var countryList;
+    var locations;
     var autorotate, now, diff, roation;
     var currentCountry;
 
@@ -151,6 +143,67 @@
       if (currentCountry) {
         fill(currentCountry, colorCountry);
       }
+      // fill(locations, "#fff");
+      var geojson = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {
+              name: "Africa",
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [
+                  [-6, 36],
+                  [33, 30],
+                  [43, 11],
+                  [51, 12],
+                  [29, -33],
+                  [18, -35],
+                  [7, 5],
+                  [-17, 14],
+                  [-6, 36],
+                ],
+              ],
+            },
+          },
+          {
+            type: "Feature",
+            properties: {
+              name: "Australia",
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [
+                  [143, -11],
+                  [153, -28],
+                  [144, -38],
+                  [131, -31],
+                  [116, -35],
+                  [114, -22],
+                  [136, -12],
+                  [140, -17],
+                  [143, -11],
+                ],
+              ],
+            },
+          },
+          {
+            type: "Feature",
+            properties: {
+              name: "Timbuktu",
+            },
+            geometry: {
+              type: "Point",
+              coordinates: [-3.0026, 16.7666],
+            },
+          },
+        ],
+      };
+      fill({ type: "FeatureCollection", features: geojson.features }, "#fff");
     }
 
     function fill(obj, color) {
@@ -263,46 +316,27 @@
       .on("mousemove", mousemove);
 
     loadData(function (world, cList) {
+      // console.log("world", world);
+      // console.log("cList", cList);
+      locations = {
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [-74.006, 40.7128],
+        },
+        properties: {
+          name: "New York City",
+        },
+      };
+
       land = topojson.feature(world, world.objects.land);
       countries = topojson.feature(world, world.objects.countries);
+
       countryList = cList;
-      n = countryList.length;
 
       window.addEventListener("resize", scale);
       scale();
-      // autorotate = d3.timer(rotate);
+      autorotate = d3.timer(rotate);
     });
-
-    (function transition() {
-      d3.transition()
-        .duration(1250)
-        .on("start", function () {
-          title.text(countryList[(i = (i + 1) % n)].name);
-        })
-        .tween("rotate", function () {
-          // console.log(countries.features);
-          // console.log(countryList[0].name);
-          var p = d3.geoCentroid(countryList[i]),
-            r = d3.interpolate(projection.rotate(), [-p[0], -p[1]]);
-          return function (t) {
-            projection.rotate(r(t));
-            context.clearRect(0, 0, width, height);
-            (context.fillStyle = "#ccc"), context.beginPath(), path(land), context.fill();
-            (context.fillStyle = "#f00"), context.beginPath(), path(countries[i]), context.fill();
-            (context.strokeStyle = "#fff"),
-              (context.lineWidth = 0.5),
-              context.beginPath(),
-              // path(borders),
-              context.stroke();
-            (context.strokeStyle = "#000"),
-              (context.lineWidth = 2),
-              context.beginPath(),
-              path(globe),
-              context.stroke();
-          };
-        })
-        .transition()
-        .on("end", transition);
-    })();
   </script>
 </html>
