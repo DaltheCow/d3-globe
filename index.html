@@ -6,6 +6,7 @@
     <script src="https://d3js.org/topojson.v2.min.js"></script>
     <script src="https://bl.ocks.org/mbostock/raw/7ea1dde508cec6d2d95306f92642bc42/6aac691494f752142a67cc43c51a0fd09896dbd4/versor.js"></script>
   </head>
+  <h1></h1>
   <h2 id="current"></h2>
   <canvas id="globe"></canvas>
   <style>
@@ -53,6 +54,8 @@
     var colorLand = "#111";
     var colorGraticule = "#ccc";
     var colorCountry = "#a00";
+    var i = 0;
+    var title = d3.select("h1");
 
     //
     // Handler
@@ -263,40 +266,43 @@
       land = topojson.feature(world, world.objects.land);
       countries = topojson.feature(world, world.objects.countries);
       countryList = cList;
+      n = countryList.length;
 
       window.addEventListener("resize", scale);
       scale();
       // autorotate = d3.timer(rotate);
     });
 
-    // (function transition() {
-    //   d3.transition()
-    //     .duration(1250)
-    //     // .on("start", function () {
-    //     //   // title.text(countries[(i = (i + 1) % n)].name);
-    //     // })
-    //     .tween("rotate", function () {
-    //       var p = d3.geo.centroid(countries[i]),
-    //         r = d3.interpolate(projection.rotate(), [-p[0], -p[1]]);
-    //       return function (t) {
-    //         projection.rotate(r(t));
-    //         c.clearRect(0, 0, width, height);
-    //         (c.fillStyle = "#ccc"), c.beginPath(), path(land), c.fill();
-    //         (c.fillStyle = "#f00"), c.beginPath(), path(countries[i]), c.fill();
-    //         (c.strokeStyle = "#fff"),
-    //           (c.lineWidth = 0.5),
-    //           c.beginPath(),
-    //           path(borders),
-    //           c.stroke();
-    //         (c.strokeStyle = "#000"),
-    //           (c.lineWidth = 2),
-    //           c.beginPath(),
-    //           path(globe),
-    //           c.stroke();
-    //       };
-    //     })
-    //     .transition()
-    //     .on("end", transition);
-    // })();
+    (function transition() {
+      d3.transition()
+        .duration(1250)
+        .on("start", function () {
+          title.text(countryList[(i = (i + 1) % n)].name);
+        })
+        .tween("rotate", function () {
+          // console.log(countries.features);
+          // console.log(countryList[0].name);
+          var p = d3.geoCentroid(countryList[i]),
+            r = d3.interpolate(projection.rotate(), [-p[0], -p[1]]);
+          return function (t) {
+            projection.rotate(r(t));
+            context.clearRect(0, 0, width, height);
+            (context.fillStyle = "#ccc"), context.beginPath(), path(land), context.fill();
+            (context.fillStyle = "#f00"), context.beginPath(), path(countries[i]), context.fill();
+            (context.strokeStyle = "#fff"),
+              (context.lineWidth = 0.5),
+              context.beginPath(),
+              // path(borders),
+              context.stroke();
+            (context.strokeStyle = "#000"),
+              (context.lineWidth = 2),
+              context.beginPath(),
+              path(globe),
+              context.stroke();
+          };
+        })
+        .transition()
+        .on("end", transition);
+    })();
   </script>
 </html>
