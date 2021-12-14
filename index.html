@@ -53,9 +53,13 @@
     //
 
     function enter(country) {
-      var country = countryList.find(function (c) {
-        return parseInt(c.id, 10) === parseInt(country.id, 10);
-      });
+      var country =
+        locationsList.find(function (c) {
+          return parseInt(c.id, 10) === parseInt(country.id, 10);
+        }) ||
+        countryList.find(function (c) {
+          return parseInt(c.id, 10) === parseInt(country.id, 10);
+        });
       current.text((country && country.name) || "");
     }
 
@@ -85,6 +89,22 @@
     var locations;
     var autorotate, now, diff, roation;
     var currentCountry;
+
+    var locationsList = [{ id: "1", name: "New York City" }];
+
+    var geojsonLocation = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          id: "1",
+          geometry: d3.geoCircle().center([-74.006, 40.7128]).radius(2)(),
+          properties: {
+            name: "New York City",
+          },
+        },
+      ],
+    };
 
     //
     // Functions
@@ -140,26 +160,11 @@
       fill(water, colorWater);
       stroke(graticule, colorGraticule);
       fill(land, colorLand);
+      fill({ type: "FeatureCollection", features: geojsonLocation.features }, "blue");
       if (currentCountry) {
         fill(currentCountry, colorCountry);
       }
       // fill(locations, "#fff");
-      var geojson = {
-        type: "FeatureCollection",
-        features: [
-          {
-            type: "Feature",
-            geometry: {
-              type: "Point",
-              coordinates: [-74.006, 40.7128],
-            },
-            properties: {
-              name: "New York City",
-            },
-          },
-        ],
-      };
-      fill({ type: "FeatureCollection", features: geojson.features }, "blue");
     }
 
     function fill(obj, color) {
@@ -189,19 +194,16 @@
     }
 
     function loadData(cb) {
-      d3.json(
-        "https://unpkg.com/world-atlas@1/world/110m.json",
-        function (error, world) {
-          if (error) throw error;
-          d3.tsv(
-            "https://gist.githubusercontent.com/mbostock/4090846/raw/07e73f3c2d21558489604a0bc434b3a5cf41a867/world-country-names.tsv",
-            function (error, countries) {
-              if (error) throw error;
-              cb(world, countries);
-            }
-          );
-        }
-      );
+      d3.json("https://unpkg.com/world-atlas@1/world/110m.json", function (error, world) {
+        if (error) throw error;
+        d3.tsv(
+          "https://gist.githubusercontent.com/mbostock/4090846/raw/07e73f3c2d21558489604a0bc434b3a5cf41a867/world-country-names.tsv",
+          function (error, countries) {
+            if (error) throw error;
+            cb(world, countries);
+          }
+        );
+      });
     }
 
     // https://github.com/d3/d3-polygon
@@ -216,8 +218,7 @@
       var inside = false;
       for (var i = 0; i < n; ++i) {
         (p = polygon[i]), (x1 = p[0]), (y1 = p[1]);
-        if (y1 > y !== y0 > y && x < ((x0 - x1) * (y - y1)) / (y0 - y1) + x1)
-          inside = !inside;
+        if (y1 > y !== y0 > y && x < ((x0 - x1) * (y - y1)) / (y0 - y1) + x1) inside = !inside;
         (x0 = x1), (y0 = y1);
       }
       return inside;
@@ -243,16 +244,28 @@
 
     function getCountry(event) {
       var pos = projection.invert(d3.mouse(event));
-      return countries.features.find(function (f) {
-        return f.geometry.coordinates.find(function (c1) {
-          return (
-            polygonContains(c1, pos) ||
-            c1.find(function (c2) {
-              return polygonContains(c2, pos);
-            })
-          );
-        });
-      });
+      return (
+        geojsonLocation.features.find(function (f) {
+          return f.geometry.coordinates.find(function (c1) {
+            return (
+              polygonContains(c1, pos) ||
+              c1.find(function (c2) {
+                return polygonContains(c2, pos);
+              })
+            );
+          });
+        }) ||
+        countries.features.find(function (f) {
+          return f.geometry.coordinates.find(function (c1) {
+            return (
+              polygonContains(c1, pos) ||
+              c1.find(function (c2) {
+                return polygonContains(c2, pos);
+              })
+            );
+          });
+        })
+      );
     }
 
     //
@@ -262,18 +275,10 @@
     setAngles();
 
     canvas
-      .call(
-        d3
-          .drag()
-          .on("start", dragstarted)
-          .on("drag", dragged)
-          .on("end", dragended)
-      )
+      .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended))
       .on("mousemove", mousemove);
 
     loadData(function (world, cList) {
-      // console.log("world", world);
-      // console.log("cList", cList);
       locations = {
         type: "Feature",
         geometry: {
